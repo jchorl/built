@@ -355,7 +355,7 @@ pub fn write_built_file_with_opts(
     #[cfg(any(feature = "cargo-lock", feature = "git2"))] manifest_location: Option<&path::Path>,
     dst: &path::Path,
 ) -> io::Result<()> {
-    let mut built_file = fs::File::create(dst)?;
+    let mut built_file = fs::File::create(dst).expect("create built file");
     built_file.write_all(
         r#"//
 // EVERYTHING BELOW THIS POINT WAS AUTO-GENERATED DURING COMPILATION. DO NOT MODIFY.
@@ -365,26 +365,29 @@ pub fn write_built_file_with_opts(
     )?;
 
     let envmap = environment::EnvironmentMap::new();
-    envmap.write_ci(&built_file)?;
-    envmap.write_env(&built_file)?;
-    envmap.write_features(&built_file)?;
-    envmap.write_compiler_version(&built_file)?;
-    envmap.write_cfg(&built_file)?;
+    envmap.write_ci(&built_file).expect("write ci");
+    envmap.write_env(&built_file).expect("write env");
+    envmap.write_features(&built_file).expect("write features");
+    envmap
+        .write_compiler_version(&built_file)
+        .expect("write compiler version");
+    envmap.write_cfg(&built_file).expect("write cfg");
 
     #[cfg(feature = "git2")]
     {
         if let Some(manifest_location) = manifest_location {
-            git::write_git_version(manifest_location, &built_file)?;
+            git::write_git_version(manifest_location, &built_file).expect("write git");
         }
     }
 
     #[cfg(feature = "cargo-lock")]
     if let Some(manifest_location) = manifest_location {
-        dependencies::write_dependencies(manifest_location, &built_file)?;
+        dependencies::write_dependencies(manifest_location, &built_file)
+            .expect("write cargo lock deps");
     }
 
     #[cfg(feature = "chrono")]
-    krono::write_time(&built_file)?;
+    krono::write_time(&built_file).expect("write time");
 
     built_file.write_all(
         r#"//
